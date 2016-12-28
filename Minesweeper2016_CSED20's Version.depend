@@ -1,0 +1,65 @@
+# depslib dependency file v1.0
+1482945013 source:c:\users\dell\desktop\minesweeper2016_csed20's version\main.c
+	<stdio.h>
+	<string.h>
+	<math.h>
+	<stdlib.h>
+	<limits.h>
+	<time.h>
+	<windows.h>
+	<ctype.h>
+	"play.h"
+	"leaderboard_list.h"
+	"load.h"
+	"exit.h"
+	"Grid.h"
+	"initialization.h"
+	"display.h"
+	"save.h"
+	"action.h"
+	"row column.h"
+	"distributemines.h"
+	"open1.h"
+	"open2.h"
+	"win.h"
+	"lose.h"
+	"check name.h"
+	"username.h"
+	"Leaderboard.h"
+
+1482958792 c:\users\dell\desktop\minesweeper2016_csed20's version\play.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\leaderboard_list.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\load.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\exit.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\grid.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\initialization.h
+
+1482957767 c:\users\dell\desktop\minesweeper2016_csed20's version\display.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\save.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\action.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\row column.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\distributemines.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\open1.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\open2.h
+
+1482943903 c:\users\dell\desktop\minesweeper2016_csed20's version\win.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\lose.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\check name.h
+
+1482943902 c:\users\dell\desktop\minesweeper2016_csed20's version\username.h
+
+1482957517 c:\users\dell\desktop\minesweeper2016_csed20's version\leaderboard.h
+

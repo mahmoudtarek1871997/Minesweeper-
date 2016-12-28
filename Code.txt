@@ -1,0 +1,1768 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <time.h> // >>>>>>>>>> Time library
+#include <windows.h>
+#include <ctype.h>
+#define STR_LEN 1000
+
+
+void play(int a)
+{
+    system("COLOR 0F");
+    FILE*game;
+    game=fopen("game.txt","r");
+    fseek(game,0,SEEK_END);
+    if(ftell(game)==0) //check if the file is empty or not
+    {
+        fclose(game);
+        printf("**Minesweeper**\n\n\nLet's play ...\n\n1.Start New Game\n2..Leader board\n3.Exit\n\nSelect number : ");
+        int x;
+        char xc[STR_LEN];
+        gets(xc);
+        if(xc[1]!='\0') //if the input is not 1 char
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            play(0);
+        }
+        x=xc[0]-'0'; //change the char to int
+        if(x==1)
+        {
+            system("cls");
+            Grid(0);
+        }
+        else if(x==2)
+        {
+            system("cls");
+            printf("**Leaderboard**\n\n");
+            leaderboard_list(0);
+        }
+        else if(x==3)
+        {
+            system("cls");
+            exit1(0);
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            play(0);
+        }
+    }
+    else
+    {
+        printf("**Minesweeper**\n\n\nLet's play ...\n\n1.Continue Game\n2.Start New Game\n3.Leader board\n4.Exit\n\nSelect number : ");
+        int x;
+        char xc[STR_LEN];
+        gets(xc);
+        fclose(game);
+        if(xc[1]!='\0') //if the input is not 1 char
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            play(0);
+        }
+        x=xc[0]-'0'; //change the char to int
+        if(x==1)
+        {
+            system("cls");
+            load(0);
+        }
+        else if(x==2)
+        {
+            system("cls");
+            fclose(fopen("game.txt", "w"));
+            Grid(0);
+        }
+        else if(x==3)
+        {
+            printf("**Leaderboard**\n\n");
+            leaderboard_list(0);
+        }
+        else if(x==4)
+        {
+            system("cls");
+            exit1(0);
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            play(0);
+        }
+    }
+}
+
+void leaderboard_list(int a)
+{
+    FILE*Leaderboard;
+    Leaderboard=fopen("Leaderboard.txt","r");
+    fseek(Leaderboard,0,SEEK_END);
+    if(ftell(Leaderboard)==0) //check if the file is empty or not
+    {
+        fclose(Leaderboard);
+        printf("The file is empty ,there is no any player right now\nPress (Enter) to return to the Main Menu\n");
+        char x[STR_LEN];
+        gets(x);
+        system("cls");
+        play(0);
+    }
+    else
+    {
+        fclose(Leaderboard);
+        int i,lines=1,ch;
+        Leaderboard=fopen("Leaderboard.txt","r");
+        while(!feof(Leaderboard))
+        {
+            ch=fgetc(Leaderboard);
+            if(ch=='\n')
+            {
+                lines++;
+            }
+        }
+        fseek(Leaderboard,0,SEEK_SET);
+        struct name_score
+        {
+            char name[STR_LEN];
+            double score;
+        };
+        struct name_score LBstr[STR_LEN];
+        printf("r-name\t\t\t\t\t\tscore\n\n");
+        for(i=0;i<lines;i++)
+        {
+            if(i>8)
+            {
+                if(i==lines-1)
+                {
+                    fscanf(Leaderboard,"%[^,],%lf",LBstr[i].name,&LBstr[i].score);
+                    printf("%d-%-44s %.2f",i+1,LBstr[i].name, LBstr[i].score);
+                }
+                else
+                {
+                    fscanf(Leaderboard,"%[^,],%lf\n",LBstr[i].name,&LBstr[i].score);
+                    printf("%d-%-44s %.2f\n",i+1,LBstr[i].name,LBstr[i].score);
+                }
+            }
+            else
+            {
+                if(i==lines-1)
+                {
+                    fscanf(Leaderboard,"%[^,],%lf",LBstr[i].name,&LBstr[i].score);
+                    printf("%d-%-45s %.2f",i+1,LBstr[i].name, LBstr[i].score);
+                }
+                else
+                {
+                    fscanf(Leaderboard,"%[^,],%lf\n",LBstr[i].name,&LBstr[i].score);
+                    printf("%d-%-45s %.2f\n",i+1,LBstr[i].name,LBstr[i].score);
+                }
+            }
+        }
+        fclose(Leaderboard);
+        printf("\n\nPress (Enter) to return to the Main Menu\n");
+        char x[STR_LEN];
+        gets(x);
+        system("cls");
+        play(0);
+    }
+}
+
+void load(int a)
+{
+    // Time Function
+    struct tm *local;
+    time_t t;
+    t=time(NULL);
+    local=localtime(&t);
+
+    int i,j,r,c,mines,moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m,time_s,T;
+    FILE*game;
+    game=fopen("game.txt","r");
+    fscanf(game," %d %d %d %d %d %d %d %d",&r,&c,&mines,&moves,&o,&time_m,&time_s,&T);
+    P_Ts=local->tm_sec; //at the next move the time now will be previous then
+    P_Tm=local->tm_min;
+    int M[r][c],V[r][c],C[c+1],R[r];
+    char G[r][c];
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fscanf(game," %c",&G[i][j]);
+        }
+    }
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fscanf(game," %d",&M[i][j]);
+        }
+    }
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fscanf(game," %d",&V[i][j]);
+        }
+    }
+    for(j=0; j<c+1; j++)
+    {
+        fscanf(game," %d",&C[j]);
+    }
+    for(i=0; i<r; i++)
+    {
+        fscanf(game," %d",&R[i]);
+    }
+    fclose(game);
+    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+}
+
+void exit1(int a)
+{
+    char i,xc[STR_LEN];
+    printf("Are you sure you want to exit ?\ny.Yes\tn.No\n\n");
+    gets(xc);
+    if(xc[1]!='\0') //if the input is not 1 char
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        exit1(0);
+    }
+    i=xc[0];
+    if(i=='y') //yes
+    {
+        system("cls");
+        system("COLOR f9");
+        printf("Goodbye ^_^\n");
+        exit(0);
+    }
+    else if(i=='n') //no
+    {
+        system("cls");
+        printf("Return back to the game\n\n");
+        play(0);
+    }
+    else //the input is not YES or NO !!
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        exit1(0);
+    }
+}
+
+void Grid(int a)
+{
+    int C_Ts,P_Ts=0,time_m=0, time_s=0,C_Tm,P_Tm=0;
+
+    int r, c,o=0,T=0;   // r >> Grid Rows , c >> Grid Columns , o to check if it is the first open action or not to distribute the mines , T to check if it is the first time to printing the time or not
+
+    // getting Grid Dimensions from the user
+
+    printf("Enter the number of rows of your Grid :");
+    char xc[STR_LEN];
+    gets(xc);
+    if(xc[1]=='\0') //checking if there is 1 char
+    {
+        if(xc[0]>='0' && xc[0]<='9') //checking if the char is between 0 and 9
+        {
+            r=xc[0]-'0'; //changing the char to int
+            if(r<2 || r>30) //checking the max and min number of rows of the matrix
+            {
+                system("cls");
+                printf("Error! ,Try Again\n\n");
+                Grid(0);
+            }
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            Grid(0);
+        }
+    }
+    else if(xc[2]=='\0') //checking if there are 2 chars
+    {
+        if(xc[0]>='0' && xc[0]<='9' && xc[1]>='0' && xc[1]<='9') //checking if the 2 chars are between 0 and 9
+        {
+            r=xc[0]-'0';
+            r=r*10+xc[1]-'0'; //changing the char to int
+            if(r<2 || r>30)
+            {
+                system("cls");
+                printf("Error! ,Try Again\n\n");
+                Grid(0);
+            }
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            Grid(0);
+        }
+    }
+    else
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        Grid(0);
+    }
+    printf("\nEnter the number of columns of your Grid :");
+    char yc[STR_LEN];
+    gets(yc);
+    if(yc[1]=='\0') //checking if there is 1 char
+    {
+        if(yc[0]>='0' && yc[0]<='9') //checking if the char is between 0 and 9
+        {
+            c=yc[0]-'0'; //changing the char to int
+            if(c<2 || c>30) //checking the max and min number of columns of the matrix
+            {
+                system("cls");
+                printf("Error! ,Try Again\n\n");
+                Grid(0);
+            }
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            Grid(0);
+        }
+    }
+    else if(yc[2]=='\0') //checking if there are 2 chars
+    {
+        if(yc[0]>='0' && yc[0]<='9' && yc[1]>='0' && yc[1]<='9') //checking if the 2 chars are between 0 and 9
+        {
+            c=yc[0]-'0';
+            c=c*10+yc[1]-'0'; //changing the char to int
+            if(c<2 || c>30)
+            {
+                system("cls");
+                printf("Error! ,Try Again\n\n");
+                Grid(0);
+            }
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            Grid(0);
+        }
+    }
+    else
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        Grid(0);
+    }
+    system("cls");
+
+    int mines,moves=0;
+    mines=1+(r*c)/10; //the Formula of mines
+
+    char G[r][c];
+    int M[r][c], V[r][c], C[c+1], R[r];
+
+    initialization(r, c, M, G, V, C, R);
+    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+}
+
+void initialization(int r, int c, int M[][c], char G[][c], int V[][c], int C[], int R[])
+{
+    int i,j;
+    for(i=0 ; i<r ; i++)
+    {
+        R[i] = i+1 ; //this array of the number of rows which guide the player
+        for(j=0 ; j<c ; j++)
+        {
+            V[i][j]=0; //this matrix to check if the element has been visited or not
+            M[i][j]=0; //this matrix where the mines distribute
+            G[i][j]='X'; //this matrix which appears to the player
+        }
+    }
+    for(j=0; j<c+1; j++)
+    {
+        C[j] = j ; //this array of the number of columns which guide the player
+    }
+}
+
+void display(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[],int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    // Time Function
+    struct tm *local;
+    time_t t;
+    t=time(NULL);
+    local=localtime(&t);
+
+    int i,j,flags,QM;
+    flags=QM=0;
+    for(j=0; j<c+1; j++)
+    {
+        if(C[j]==0) //printing the numbers of columns to guide the player
+        {
+            printf("   ");
+        }
+        else if(C[j]<9)
+        {
+            printf("  %d ",C[j]);
+        }
+        else
+        {
+            printf("  %d",C[j]);
+        }
+    }
+    printf("\n");
+    for(j=0; j<c+1; j++)
+    {
+        if(j==0)
+        {
+            printf("   -");
+        }
+        else
+        {
+            printf("----");
+        }
+    }
+    printf("\n");
+
+    HANDLE hConsole;
+    hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+
+    for(i=0; i<r; i++)
+    {
+        if(R[i]<10)
+        {
+            printf("%d  |",R[i]); //printing the numbers of rows to guide the player
+        }
+        else
+        {
+            printf("%d |",R[i]);
+        }
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]=='F')
+            {
+                flags++;
+                SetConsoleTextAttribute(hConsole,207);
+            }
+            else if(G[i][j]=='?')
+            {
+                QM++;
+                SetConsoleTextAttribute(hConsole,159);
+            }
+            if(G[i][j]=='0')
+            {
+                G[i][j]=' ';
+                printf(" %c ",G[i][j]);
+            }
+            else
+            {
+                if(G[i][j]=='1')
+                {
+                    SetConsoleTextAttribute(hConsole,9);
+                }
+                else if(G[i][j]=='2')
+                {
+                    SetConsoleTextAttribute(hConsole,10);
+                }
+                else if(G[i][j]=='3')
+                {
+                    SetConsoleTextAttribute(hConsole,12);
+                }
+                else if(G[i][j]=='4')
+                {
+                    SetConsoleTextAttribute(hConsole,1);
+                }
+                else if(G[i][j]=='5')
+                {
+                    SetConsoleTextAttribute(hConsole,4);
+                }
+                else if(G[i][j]=='6')
+                {
+                    SetConsoleTextAttribute(hConsole,13);
+                }
+                else if(G[i][j]=='7')
+                {
+                    SetConsoleTextAttribute(hConsole,14);
+                }
+                else if(G[i][j]=='8')
+                {
+                    SetConsoleTextAttribute(hConsole,11);
+                }
+                printf(" %c ",G[i][j]); //printing the Grid
+            }
+            SetConsoleTextAttribute(hConsole,15);
+            printf("|");
+        }
+        printf("\n");
+        for(j=0; j<c+1; j++)
+        {
+            if(j==0)
+            {
+                printf("   -");
+            }
+            else
+            {
+                printf("----");
+            }
+        }
+        printf("\n");
+    }
+    printf("\nNumber of mines ---> %d\n",mines);
+    printf("Number of cells marked with flags ---> %d\n",flags);
+    printf("Number of cells marked with question mark ---> %d\n",QM);
+    printf("Number of moves ---> %d\n",moves);
+    if(T==0) //checking if this is the first time to print the time of the game
+    {
+        T++;
+        printf("Time is ---> %d:0%d\n",time_m,time_s);
+        P_Ts=local->tm_sec; //at the next move the time now will be previous then
+        P_Tm=local->tm_min;
+    }
+    else if(T>0)
+    {
+        C_Ts=local->tm_sec; //the current time is the time now
+        C_Tm=local->tm_min;
+        if(C_Ts>P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+        {
+            time_s=time_s+C_Ts-P_Ts; //the game time will be the difference between the current and the previous time plus the last game time
+            if(time_s>=60)
+            {
+                time_m=time_m+1;
+                time_s=time_s%60; //if the game time with seconds is equal or more than 60 take the mod and increase the game time with minute by one minute
+                if(C_Tm>P_Tm)
+                {
+                    if(C_Tm-P_Tm>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+                else if(C_Tm<P_Tm)
+                {
+                    if(60-(P_Tm-C_Tm)>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+            }
+            else
+            {
+                if(C_Tm>P_Tm)
+                {
+                    if(C_Tm-P_Tm>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+                else if(C_Tm<P_Tm)
+                {
+                    if(60-(P_Tm-C_Tm)>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+            }
+        }
+        else if(C_Ts<=P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+        {
+            time_s=time_s+60-(P_Ts-C_Ts); //if the previous time by seconds is equal or more than the current time by seconds the difference will be 60+P-C
+            if(time_s>=60)
+            {
+                time_m=time_m+1;
+                time_s=time_s%60;
+                if(C_Tm>P_Tm)
+                {
+                    if(C_Tm-P_Tm>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+                else if(C_Tm<P_Tm)
+                {
+                    if(60-(P_Tm-C_Tm)>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+            }
+            else
+            {
+                if(C_Tm>P_Tm)
+                {
+                    if(C_Tm-P_Tm>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+                else if(C_Tm<P_Tm)
+                {
+                    if(60-(P_Tm-C_Tm)>1)
+                    {
+                        time_m=time_m+C_Tm-P_Tm-1;
+                    }
+                }
+            }
+        }
+        if(time_s<10)
+        {
+            printf("Time is ---> %d:0%d\n",time_m,time_s); //to print the seconds always 2 numbers
+        }
+        else
+        {
+            printf("Time is ---> %d:%d\n",time_m,time_s);
+        }
+        P_Ts=C_Ts; //at the next move the current time will be previous then
+        P_Tm=C_Tm;
+    }
+
+    //auto save after every move
+    save( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+
+    // Checking The Win Condition ..... Also it will be executed Once but we must check it after every time we display our grid
+    int counter=0;
+
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]=='X' || G[i][j]=='F' || G[i][j]=='?')
+            {
+                counter++;
+            }
+        }
+    }
+    if(counter==mines)
+    {
+        system("cls");
+        SetConsoleTextAttribute(hConsole,10);
+        printf("****You win****\n");
+        win(r,c,M,V,G,R,C,mines,moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+    }
+    else
+    {
+        action( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+    }
+}
+
+void save(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[],int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    // Time Function
+    struct tm *local;
+    time_t t;
+    t=time(NULL);
+    local=localtime(&t);
+
+    C_Ts=local->tm_sec; //the current time is the time now
+    C_Tm=local->tm_min;
+    if(C_Ts>P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+    {
+        time_s=time_s+C_Ts-P_Ts; //the game time will be the difference between the current and the previous time plus the last game time
+        if(time_s>=60)
+        {
+            time_m=time_m+1;
+            time_s=time_s%60; //if the game time with seconds is equal or more than 60 take the mod and increase the game time with minute by one minute
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+        else
+        {
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+    }
+    else if(C_Ts<=P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+    {
+        time_s=time_s+60-(P_Ts-C_Ts); //if the previous time by seconds is equal or more than the current time by seconds the difference will be 60+P-C
+        if(time_s>=60)
+        {
+            time_m=time_m+1;
+            time_s=time_s%60;
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+        else
+        {
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+    }
+    int i,j;
+    FILE*game;
+    game=fopen("game.txt","w");
+    fprintf(game,"%d %d %d %d %d %d %d %d\n\n",r,c,mines,moves,o,time_m,time_s,T);
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]==' ')
+            {
+                fprintf(game,"0 ");
+            }
+            else
+            {
+                fprintf(game,"%c ",G[i][j]);
+            }
+        }
+        fprintf(game,"\n");
+    }
+    fprintf(game,"\n");
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fprintf(game,"%d ",M[i][j]);
+        }
+        fprintf(game,"\n");
+    }
+    fprintf(game,"\n");
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fprintf(game,"%d ",V[i][j]);
+        }
+        fprintf(game,"\n");
+    }
+    fprintf(game,"\n");
+    for(j=0; j<c+1; j++)
+    {
+        fprintf(game,"%d ",C[j]);
+    }
+    fprintf(game,"\n\n");
+    for(i=0; i<r; i++)
+    {
+        fprintf(game,"%d ",R[i]);
+    }
+    fclose(game);
+}
+
+void action(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[],int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int x,y;
+    char a[STR_LEN];
+    printf("\n(o).open a closed or opened cell \t (f).put a flag \t (?).put a question mark\n(r).remove flags or question marks \t (s).save and exit\n\nEnter the action : ");
+    gets(a);
+    if(a[1]=='\0') //checking if the input is 1 char
+    {
+        if(a[0]=='s') //save & exit
+        {
+            save( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+            system("cls");
+            exit1(0);
+        }
+        else if(a[0]=='o' || a[0]=='f' || a[0]=='?' || a[0]=='r') //checking if the input is one of the 4 actions
+        {
+            printf("\nEnter the row : ");
+            x=row( r, c, mines, M,V,G, R, C, moves,o, C_Ts, P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+            printf("\nEnter the column : ");
+            y=column( r, c, mines, M,V,G, R, C, moves,o, C_Ts, P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+            system("cls");
+            if(a[0]=='o' && o==0) // check if this is the first action of open
+            {
+                if(G[x][y]=='F')
+                {
+                    system("cls");
+                    printf("Error! ,Try Again\n\n");
+                    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+                else
+                {
+                    o++;
+                    moves++;
+                    distributeMines( r, c, mines, x, y, M,V,G, R, C, moves, C_Ts, P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+
+            }
+            else if(a[0]=='o')
+            {
+                if(G[x][y]=='F')
+                {
+                    system("cls");
+                    printf("Error! ,Try Again\n\n");
+                    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+                else
+                {
+                    moves++;
+                    if(V[x][y]==0) //checking if the cell was visited or not
+                    {
+                        open1(x,y,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                    }
+                    else
+                    {
+                        open2(x,y,r,c,M,V,G, R, C, mines, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                    }
+                }
+            }
+            else if(a[0]=='f')
+            {
+                if(G[x][y]=='X' || G[x][y]=='?')
+                {
+                    moves++;
+                    if(G[x][y]=='?') //if the cell have ? replace it with a flag
+                    {
+                        G[x][y]='F';
+                    }
+                    else
+                    {
+                        G[x][y]='F';
+                    }
+                }
+                else
+                {
+                    system("cls");
+                    printf("Error! ,Try Again\n\n");
+                    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+            }
+            else if(a[0]=='?')
+            {
+                if(G[x][y]=='X' || G[x][y]=='F')
+                {
+                    moves++;
+                    if(G[x][y]=='F') //if the cell have a flag replace it with ?
+                    {
+                        G[x][y]='?';
+                    }
+                    else
+                    {
+                        G[x][y]='?';
+                    }
+                }
+                else
+                {
+                    system("cls");
+                    printf("Error! ,Try Again\n\n");
+                    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+            }
+            else if(a[0]=='r')
+            {
+                if(G[x][y]=='?')
+                {
+                    moves++;
+                    G[x][y]='X';
+                }
+                else if(G[x][y]=='F')
+                {
+                    moves++;
+                    G[x][y]='X';
+                }
+                else
+                {
+                    system("cls");
+                    printf("Error! ,Try Again\n\n");
+                    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+            }
+
+            system("cls");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+    else
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+    }
+}
+
+int row(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[], int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int x;
+    char xc[STR_LEN];
+    gets(xc);
+    if(xc[1]=='\0')
+    {
+        x=xc[0]-'0';
+        x--;
+        if(x>=0 && x<r)
+        {
+            return x;
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+    else if(xc[2]=='\0')
+    {
+        x=xc[0]-'0';
+        x=x*10+xc[1]-'0';
+        x--;
+        if(x>=0 && x<r)
+        {
+            return x;
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+    else
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+    }
+}
+
+int column(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[], int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int y;
+    char yc[STR_LEN];
+    gets(yc);
+    if(yc[1]=='\0')
+    {
+        y=yc[0]-'0';
+        y--;
+        if(y>=0 && y<c)
+        {
+            return y;
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+    else if(yc[2]=='\0')
+    {
+        y=yc[0]-'0';
+        y=y*10+yc[1]-'0';
+        y--;
+        if(y>=0 && y<c)
+        {
+            return y;
+        }
+        else
+        {
+            system("cls");
+            printf("Error! ,Try Again\n\n");
+            display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+    else
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+    }
+}
+
+void distributeMines(int r,int c,int mines,int x,int y,int M[][c],int V[][c],char G[][c],int R[], int C[],int moves,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int i,j;
+    int counter=0; //counter is the number of the cells which will have mines
+    srand(time(NULL));
+    while(counter<mines)
+    {
+        int nx=rand()%r;
+        int ny=rand()%c;
+
+        if(M[nx][ny]!=9 && (nx!=x || ny!=y)) // check whether the cell has a mine before ..
+        {
+            // & whether it is the player choose or not ..
+            M[nx][ny]=9 ; // planting a mine
+
+            counter++;
+
+            // distributing the numbers around the mine
+            for(i=nx-1; i<=nx+1; i++)
+            {
+                for(j=ny-1; j<=ny+1; j++)
+                {
+                    if(i>=0 && i<r && j>=0 && j<c && (i!=nx || j!=ny)) //checking if the cell is not out of the range of the grid and the cell is not the one which have the mine
+                    {
+                        if(M[i][j]!=9) //checking if the cell have got a mine or not
+                        {
+                            M[i][j]++;
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+    FILE*OpenedGrid;
+    OpenedGrid=fopen("OpenedGrid.txt","w");
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            fprintf(OpenedGrid,"%d ",M[i][j]);
+        }
+        fprintf(OpenedGrid,"\n");
+    }
+    fclose(OpenedGrid);
+    open1(x,y,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+}
+
+void open1(int x,int y,int r,int c,int M[][c],int V[][c],char G[][c],int R[], int C[], int mines, int moves,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int i,j;
+    V[x][y]=1;
+    if(M[x][y]==0)
+    {
+        G[x][y]=' ';
+        for(i=x-1; i<=x+1; i++)
+        {
+            for(j=y-1; j<=y+1; j++)
+            {
+                if(V[i][j]==0 && j>-1 && j<c && i>-1 && i<r)
+                {
+                    open1(i,j,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                }
+            }
+        }
+    }
+    else if(M[x][y]>0 && M[x][y]<9)
+    {
+        G[x][y]=M[x][y]+'0';
+    }
+    else if(M[x][y]==9)
+    {
+        if(G[x][y]!='F')
+        {
+            HANDLE hConsole;
+            hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+            // lose
+            system("cls");
+            SetConsoleTextAttribute(hConsole,12);
+            printf("****You lose****\n\n");
+            lose(x,y,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+        }
+    }
+}
+
+void open2(int x,int y,int r,int c,int M[][c],int V[][c],char G[][c],int R[], int C[], int mines, int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
+{
+    int i,j,Fn=0;
+    if(M[x][y]>0 && M[x][y]<9)
+    {
+        for(i=x-1; i<=x+1; i++)
+        {
+            for(j=y-1; j<=y+1; j++)
+            {
+                if(G[i][j]=='F' && j>-1 && j<c && i>-1 && i<r)
+                {
+                    Fn++;
+                }
+            }
+        }
+        if(M[x][y]==Fn)
+        {
+            for(i=x-1; i<=x+1; i++)
+            {
+                for(j=y-1; j<=y+1; j++)
+                {
+                    if(G[i][j]!='F' && j>-1 && j<c && i>-1 && i<r && (i!=x || j!=y))
+                    {
+                        if(M[i][j]==9)
+                        {
+                            HANDLE hConsole;
+                            hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+                            // lose
+                            system("cls");
+                            SetConsoleTextAttribute(hConsole,12);
+                            printf("\n****You lose****\n\n");
+                            lose(x,y,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                        }
+                        else if(M[i][j]==0)
+                        {
+                            G[i][j]=' ';
+                            for(i=x-1; i<=x+1; i++)
+                            {
+                                for(j=y-1; j<=y+1; j++)
+                                {
+                                    if(V[i][j]==0 && j>-1 && j<c && i>-1 && i<r)
+                                    {
+                                        open1(i,j,r,c,M,V,G, R, C, mines, moves,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            G[i][j]=M[i][j]+'0';
+                        }
+                    }
+                }
+            }
+        }
+    }
+    system("cls");
+    display( r, c, mines, M,V,G, R, C, moves,o,C_Ts,P_Ts,C_Tm,P_Tm,time_m, time_s,T);
+}
+
+void win(int r,int c,int M[][c],int V[][c],char G[][c],int R[], int C[], int mines, int moves,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s)
+{
+    FILE*game;
+    fclose(fopen("game.txt", "w"));
+    FILE*OpenedGrid;
+    fclose(fopen("OpenedGrid.txt", "w"));
+    int i,j;
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]=='X' || G[i][j]=='?')
+            {
+                G[i][j]='F';
+            }
+        }
+    }
+    int flags,QM;
+    flags=mines;
+    QM=0;
+    for(j=0; j<c+1; j++)
+    {
+        if(C[j]==0) //printing the numbers of columns to guide the player
+        {
+            printf("\n   ");
+        }
+        else if(C[j]<9)
+        {
+            printf("  %d ",C[j]);
+        }
+        else
+        {
+            printf("  %d",C[j]);
+        }
+    }
+    printf("\n");
+    for(j=0; j<c+1; j++)
+    {
+        if(j==0)
+        {
+            printf("   -");
+        }
+        else
+        {
+            printf("----");
+        }
+    }
+    printf("\n");
+
+    HANDLE hConsole;
+    hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+
+    for(i=0; i<r; i++)
+    {
+        if(R[i]<10)
+        {
+            printf("%d  |",R[i]); //printing the numbers of rows to guide the player
+        }
+        else
+        {
+            printf("%d |",R[i]);
+        }
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]=='1')
+            {
+                SetConsoleTextAttribute(hConsole,9);
+            }
+            else if(G[i][j]=='2')
+            {
+                SetConsoleTextAttribute(hConsole,10);
+            }
+            else if(G[i][j]=='3')
+            {
+                SetConsoleTextAttribute(hConsole,12);
+            }
+            else if(G[i][j]=='4')
+            {
+                SetConsoleTextAttribute(hConsole,1);
+            }
+            else if(G[i][j]=='5')
+            {
+                SetConsoleTextAttribute(hConsole,4);
+            }
+            else if(G[i][j]=='6')
+            {
+                SetConsoleTextAttribute(hConsole,13);
+            }
+            else if(G[i][j]=='7')
+            {
+                SetConsoleTextAttribute(hConsole,14);
+            }
+            else if(G[i][j]=='8')
+            {
+                SetConsoleTextAttribute(hConsole,11);
+            }
+            else if(G[i][j]=='F')
+            {
+                SetConsoleTextAttribute(hConsole,207);
+            }
+            printf(" %c ",G[i][j]); //printing the Grid
+            SetConsoleTextAttribute(hConsole,10);
+            printf("|");
+        }
+        printf("\n");
+        for(j=0; j<c+1; j++)
+        {
+            if(j==0)
+            {
+                printf("   -");
+            }
+            else
+            {
+                printf("----");
+            }
+        }
+        printf("\n");
+    }
+    SetConsoleTextAttribute(hConsole,15);
+    printf("Number of mines ---> %d\n",mines);
+    printf("Number of cells marked with flags ---> %d\n",flags);
+    printf("Number of cells marked with question mark ---> %d\n",QM);
+    printf("Number of moves ---> %d\n",moves);
+    if(time_s<10)
+    {
+        printf("Time is ---> %d:0%d\n",time_m,time_s);
+    }
+    else
+    {
+        printf("Time is ---> %d:%d\n",time_m,time_s);
+    }
+    username(r,c,time_m,time_s,moves);
+}
+
+void lose(int x,int y,int r,int c,int M[][c],int V[][c],char G[][c],int R[], int C[], int mines,int moves,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s)
+{
+    FILE*game;
+    fclose(fopen("game.txt", "w"));
+    FILE*OpenedGrid;
+    fclose(fopen("OpenedGrid.txt", "w"));
+
+    HANDLE hConsole;
+    hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+
+    struct tm *local;
+    time_t t;
+    t=time(NULL);
+    local=localtime(&t);
+
+    int i,j;
+    for(i=0; i<r; i++)
+    {
+        for(j=0; j<c; j++)
+        {
+            if(M[i][j]==9)
+            {
+                if(G[i][j]=='X' || G[i][j]=='?')
+                {
+                    G[i][j]='M';
+                }
+                else if(G[i][j]=='F')
+                {
+                    G[i][j]='*';
+                }
+            }
+            else if(M[i][j]!=9 && G[i][j]=='F')
+            {
+                G[i][j]='-';
+            }
+            else if((G[i][j]=='X' || G[i][j]=='?') && M[i][j]<9 && M[i][j]>=0)
+            {
+                if(M[i][j]==0)
+                {
+                    G[i][j]=' ';
+                }
+                else
+                {
+                    G[i][j]=M[i][j]+'0';
+                }
+            }
+        }
+    }
+    G[x][y]='!';
+    int flags,QM;
+    flags=QM=0;
+    for(j=0; j<c+1; j++)
+    {
+        if(C[j]==0) //printing the numbers of columns to guide the player
+        {
+            printf("   ");
+        }
+        else if(C[j]<9)
+        {
+            printf("  %d ",C[j]);
+        }
+        else
+        {
+            printf("  %d",C[j]);
+        }
+    }
+    printf("\n");
+    for(j=0; j<c+1; j++)
+    {
+        if(j==0)
+        {
+            printf("   -");
+        }
+        else
+        {
+            printf("----");
+        }
+    }
+    printf("\n");
+
+    for(i=0; i<r; i++)
+    {
+        if(R[i]<10)
+        {
+            printf("%d  |",R[i]); //printing the numbers of rows to guide the player
+        }
+        else
+        {
+            printf("%d |",R[i]);
+        }
+        for(j=0; j<c; j++)
+        {
+            if(G[i][j]=='1')
+            {
+                SetConsoleTextAttribute(hConsole,9);
+            }
+            else if(G[i][j]=='2')
+            {
+                SetConsoleTextAttribute(hConsole,10);
+            }
+            else if(G[i][j]=='3')
+            {
+                SetConsoleTextAttribute(hConsole,12);
+            }
+            else if(G[i][j]=='4')
+            {
+                SetConsoleTextAttribute(hConsole,1);
+            }
+            else if(G[i][j]=='5')
+            {
+                SetConsoleTextAttribute(hConsole,4);
+            }
+            else if(G[i][j]=='6')
+            {
+                SetConsoleTextAttribute(hConsole,13);
+            }
+            else if(G[i][j]=='7')
+            {
+                SetConsoleTextAttribute(hConsole,14);
+            }
+            else if(G[i][j]=='8')
+            {
+                SetConsoleTextAttribute(hConsole,11);
+            }
+            else if(G[i][j]=='!')
+            {
+                SetConsoleTextAttribute(hConsole,207);
+            }
+            else if(G[i][j]=='*')
+            {
+                SetConsoleTextAttribute(hConsole,159);
+            }
+            else if(G[i][j]=='M')
+            {
+                SetConsoleTextAttribute(hConsole,79);
+            }
+            else if(G[i][j]=='-')
+            {
+                SetConsoleTextAttribute(hConsole,31);
+            }
+            printf(" %c ",G[i][j]); //printing the Grid
+            SetConsoleTextAttribute(hConsole,12);
+            printf("|");
+        }
+        printf("\n");
+        for(j=0; j<c+1; j++)
+        {
+            if(j==0)
+            {
+                printf("   -");
+            }
+            else
+            {
+                printf("----");
+            }
+        }
+        printf("\n");
+    }
+    SetConsoleTextAttribute(hConsole,15);
+    printf("Number of mines ---> %d\n",mines);
+    printf("Number of cells marked with flags ---> %d\n",flags);
+    printf("Number of cells marked with question mark ---> %d\n",QM);
+    printf("Number of moves ---> %d\n",moves);
+    C_Ts=local->tm_sec; //the current time is the time now
+    C_Tm=local->tm_min;
+    if(C_Ts>P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+    {
+        time_s=time_s+C_Ts-P_Ts; //the game time will be the difference between the current and the previous time plus the last game time
+        if(time_s>=60)
+        {
+            time_m=time_m+1;
+            time_s=time_s%60; //if the game time with seconds is equal or more than 60 take the mod and increase the game time with minute by one minute
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+        else
+        {
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+    }
+    else if(C_Ts<=P_Ts && (C_Ts!=P_Ts || C_Tm!=P_Tm))
+    {
+        time_s=time_s+60-(P_Ts-C_Ts); //if the previous time by seconds is equal or more than the current time by seconds the difference will be 60+P-C
+        if(time_s>=60)
+        {
+            time_m=time_m+1;
+            time_s=time_s%60;
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+        else
+        {
+            if(C_Tm>P_Tm)
+            {
+                if(C_Tm-P_Tm>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+            else if(C_Tm<P_Tm)
+            {
+                if(60-(P_Tm-C_Tm)>1)
+                {
+                    time_m=time_m+C_Tm-P_Tm-1;
+                }
+            }
+        }
+    }
+    if(time_s<10)
+    {
+        printf("Time is ---> %d:0%d\n",time_m,time_s); //to print the seconds always 2 numbers
+    }
+    else
+    {
+        printf("Time is ---> %d:%d\n",time_m,time_s);
+    }
+    printf("\nPress (Enter) to return to the Main Menu\n");
+    char a[STR_LEN];
+    gets(a);
+    system("cls");
+    play(0);
+}
+
+void username(int r,int c,int time_m,int time_s,int moves)
+{
+    int i=0,j,k=0,l=0,counter=0;
+    char str[STR_LEN],name[STR_LEN];
+    printf("\nEnter your name : "); //input the player name
+    gets(str);
+    while((str[l] < 'A' || str[l] > 'Z') && (str[l] < 'a' || str[l] > 'z')) //count how many char in the name that the player input before the first char (a-z or A-Z)
+    {
+        l++;
+    }
+    while (i>=0) //replace the capital char (A-Z) with a the small one (a-z)
+    {
+        if(str[i]=='\0')
+        {
+            break;
+        }
+        else if (str[i] >= 'A' && str[i] <= 'Z')
+        {
+            str[i] = 'a' + (str[i] - 'A');
+        }
+        i++;
+    }
+    j=i;
+    while(str[j-1] < 'a' || str[j-1] > 'z') //remove the char in the name that the player input after the last char (a-z)
+    {
+        j--;
+    }
+    system("cls");
+    system("COLOR 0F");
+    printf("Your name will be : ("); //the name of the player after editing
+    for(i=l; i<j; i++)
+    {
+        if((str[i] >= 'a' && str[i] <= 'z') || str[i]==' ')
+        {
+            counter++;
+            name[k]=str[i];
+            printf("%c",name[k]);
+            k++;
+        }
+    }
+    printf(")\n\n");
+    if(counter==0)
+    {
+        system("cls");
+        printf("Error! ,Try Again\n\n");
+        username(r,c,time_m,time_s,moves);
+    }
+    else
+    {
+        double score;
+        int time;
+        time=time_m*60+time_s;
+        score=(pow(r,4)*pow(c,4))/(time*moves);
+        leaderboard(name,score,r,c,time_m,time_s,moves);
+    }
+}
+
+void leaderboard(char name[],double score,int r,int c,int time_m,int time_s,int moves)
+{
+    FILE*Leaderboard;
+    Leaderboard=fopen("Leaderboard.txt","r");
+    fseek(Leaderboard,0,SEEK_END);
+    if(ftell(Leaderboard)==0) //check if the file is empty or not to input the first score
+    {
+        fclose(Leaderboard);
+        printf("So, your score is %.2f\n\n",score);
+        Leaderboard=fopen("Leaderboard.txt","w");
+        fprintf(Leaderboard,"%s,%.2f",name,score);
+        fclose(Leaderboard);
+    }
+    else
+    {
+        //if it is not the first score put the previous scores in an array of structures to sort it
+        fclose(Leaderboard);
+        int i,j,lines=1,ch;
+        Leaderboard=fopen("Leaderboard.txt","r");
+        while(!feof(Leaderboard))
+        {
+            ch=fgetc(Leaderboard);
+            if(ch=='\n')
+            {
+                lines++;
+            }
+        }
+        fseek(Leaderboard,0,SEEK_SET);
+        struct name_score
+        {
+            char name[STR_LEN];
+            double score;
+        };
+        struct name_score LBstr[STR_LEN];
+        for(i=0;i<lines;i++)
+        {
+            if(i==lines-1)
+            {
+                fscanf(Leaderboard,"%[^,],%lf",LBstr[i].name,&LBstr[i].score);
+            }
+            else
+            {
+                fscanf(Leaderboard,"%[^,],%lf\n",LBstr[i].name,&LBstr[i].score);
+            }
+        }
+        fclose(Leaderboard);
+        int f=0;
+        struct name_score tempstr;
+        for(j=0;j<i;j++) //loop to sort the scores in the leaderboard if the name is repeated
+        {
+            if(strstr(LBstr[j].name,name)!=NULL) //check if the name is already used ...
+            {
+                if(strcmp(LBstr[j].name,name)==0)
+                {
+                    check_name(score,r,c,time_m,time_s,moves);
+                    f=1; //the name is found so it is used
+                    lines--;
+                    if(score>LBstr[j].score) //compare the old score with the new one
+                    {
+                        LBstr[j].score=score;
+                        while ((LBstr[j].score>LBstr[j-1].score) && (j>0))
+                        {
+                            tempstr=LBstr[j];
+                            LBstr[j]=LBstr[j-1];
+                            LBstr[j-1]=tempstr;
+                            j--;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if(f==0) //if the name is not found so it is not used
+        {
+            printf("So, your score is %.2f\n\n",score);
+            j=0;
+            LBstr[i].name[j]=name[j];
+            while(name[j]!='\0')
+            {
+                j++;
+                LBstr[i].name[j]=name[j];
+            }
+            LBstr[i].score=score;
+            while ((LBstr[i].score>LBstr[i-1].score) && (i>0)) //Sorting the array
+            {
+                tempstr=LBstr[i];
+                LBstr[i]=LBstr[i-1];
+                LBstr[i-1]=tempstr;
+                i--;
+            }
+        }
+        Leaderboard=fopen("Leaderboard.txt","w"); //put the scores in the file
+        printf("r-name\t\t\t\t\t\tscore\n\n");
+        for (i=0;i<=lines;i++)
+        {
+            if(i>8)
+            {
+                if(i==lines)
+                {
+                    printf("%d-%-44s %.2f\n\n",i+1,LBstr[i].name,LBstr[i].score);
+                    fprintf(Leaderboard,"%s,%.2f",LBstr[i].name,LBstr[i].score);
+                }
+                else
+                {
+                    printf("%d-%-44s %.2f\n",i+1,LBstr[i].name,LBstr[i].score);
+                    fprintf(Leaderboard,"%s,%.2f\n",LBstr[i].name,LBstr[i].score);
+                }
+            }
+            else
+            {
+                if(i==lines)
+                {
+                    printf("%d-%-45s %.2f\n\n",i+1,LBstr[i].name,LBstr[i].score);
+                    fprintf(Leaderboard,"%s,%.2f",LBstr[i].name,LBstr[i].score);
+                }
+                else
+                {
+                    printf("%d-%-45s %.2f\n",i+1,LBstr[i].name,LBstr[i].score);
+                    fprintf(Leaderboard,"%s,%.2f\n",LBstr[i].name,LBstr[i].score);
+                }
+            }
+        }
+        fclose(Leaderboard);
+    }
+    printf("Press (Enter) to return to the Main Menu\n");
+    char a[STR_LEN];
+    gets(a);
+    system("cls");
+    play(0);
+}
+
+void check_name(double score,int r,int c,int time_m,int time_s,int moves)
+{
+    printf("\nThis name is already used\nAre you the user of this name ?\ny.Yes\tn.No\n");
+    char xc[STR_LEN];
+    gets(xc);
+    if(xc[1]!='\0') //if the input is not 1 char
+    {
+        system("cls");
+        printf("Error! ,Try Again\n");
+        check_name(score,r,c,time_m,time_s,moves);
+    }
+    if(xc[0]=='y') //yes
+    {
+        printf("So, your score is %.2f\n\n",score);
+    }
+    else if(xc[0]=='n') //no
+    {
+        system("cls");
+        printf("Please, write another name\n");
+        username(r,c,time_m,time_s,moves);
+    }
+    else //the input is not YES or NO !!
+    {
+        system("cls");
+        printf("Error! ,Try Again\n");
+        check_name(score,r,c,time_m,time_s,moves);
+    }
+}
