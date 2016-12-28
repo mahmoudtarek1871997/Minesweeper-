@@ -3,7 +3,6 @@
 
 void display(int r,int c,int mines,int M[][c],int V[][c],char G[][c],int R[], int C[],int moves,int o,int C_Ts,int P_Ts,int C_Tm,int P_Tm,int time_m,int time_s,int T)
 {
-    system("COLOR 3F");
     // Time Function
     struct tm *local;
     time_t t;
